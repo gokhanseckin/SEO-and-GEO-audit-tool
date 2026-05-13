@@ -1,6 +1,8 @@
 import { loadAudit, setStatus, patchSection, getLastHeartbeat } from './lib/db.ts';
+// runOffsite is wired into the orchestrator in C8 (needs shared SerperBudget)
 import { runDescription } from './steps/description.ts';
 import { runOnsite } from './steps/onsite.ts';
+import { runOffsite } from './steps/offsite.ts';
 
 Deno.serve(async (req) => {
   let body: any;
