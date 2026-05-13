@@ -6,7 +6,7 @@
 
 **Architecture:** Next.js 15 (App Router) frontend + Vercel API routes for synchronous Phase-1 work, Supabase Postgres for data + Auth + Realtime, Supabase Edge Functions (Deno, 150s budget) for the async Phase-2 pipeline. Single `audits.sections` JSONB column patched progressively by the Edge Function; UI subscribes via Realtime and renders each section as it lands.
 
-**Tech Stack:** Next.js 15, TypeScript, Tailwind CSS, Supabase (Postgres + Auth + Realtime + Edge Functions), Gemini 2.0 Flash with Search Grounding, Serper.dev, Google PageSpeed Insights API, Resend, `@react-pdf/renderer`, Vitest, Playwright, msw.
+**Tech Stack:** Next.js 15, TypeScript, Tailwind CSS, Supabase (Postgres + Auth + Realtime + Edge Functions), Gemini 2.5 Flash with Search Grounding, Serper.dev, Google PageSpeed Insights API, Resend, `@react-pdf/renderer`, Vitest, Playwright, msw.
 
 **Source spec:** [docs/superpowers/specs/2026-05-13-seo-geo-audit-design.md](../specs/2026-05-13-seo-geo-audit-design.md)
 
@@ -1148,7 +1148,7 @@ import type {
 } from './provider';
 
 const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
-const MODEL = 'gemini-2.0-flash';
+const MODEL = 'gemini-2.5-flash';
 
 function stripFences(s: string): string {
   return s.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
@@ -2118,7 +2118,7 @@ Create `supabase/functions/run-audit/lib/gemini.ts`:
 
 ```ts
 const KEY = Deno.env.get('GEMINI_API_KEY')!;
-const MODEL = 'gemini-2.0-flash';
+const MODEL = 'gemini-2.5-flash';
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
 export interface GroundedResult {
@@ -4183,7 +4183,7 @@ Single-page audit tool that analyzes a domain for traditional SEO health AND LLM
 - Private reports only
 
 ## Stack
-Next.js 15 · TypeScript · Tailwind · Supabase (Postgres + Auth + Realtime + Edge Functions) · Gemini 2.0 Flash with Google Search Grounding · Serper.dev · PageSpeed Insights · Resend · @react-pdf/renderer
+Next.js 15 · TypeScript · Tailwind · Supabase (Postgres + Auth + Realtime + Edge Functions) · Gemini 2.5 Flash with Google Search Grounding · Serper.dev · PageSpeed Insights · Resend · @react-pdf/renderer
 
 ## Development
 

@@ -12,7 +12,7 @@ Pre-implementation. Design spec approved and ready for implementation planning.
 
 - Next.js 15 App Router + TypeScript on Vercel
 - Supabase (Postgres, Auth, Realtime, Edge Functions)
-- Gemini 2.0 Flash with Google Search Grounding
+- Gemini 2.5 Flash with Google Search Grounding
 - Serper.dev for SERP data
 - Google PageSpeed Insights for Lighthouse / Core Web Vitals
 - Resend for transactional email

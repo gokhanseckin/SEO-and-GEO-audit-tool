@@ -7,7 +7,7 @@ import type {
 } from './provider';
 
 const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
-const MODEL = 'gemini-2.0-flash';
+const MODEL = 'gemini-2.5-flash';
 
 function stripFences(s: string): string {
   return s.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();

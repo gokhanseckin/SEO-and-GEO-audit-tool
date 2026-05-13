@@ -28,7 +28,7 @@ Homepage is public. Clicking "Analyze" gates behind sign-up (Google OAuth or ema
 - Single-page audit triggered by domain entry on the public homepage
 - Email + Google sign-up via Supabase Auth
 - Audit pipeline runs in Supabase Edge Functions, returns results progressively to the report page via Supabase Realtime
-- LLM probes use Gemini 2.0 Flash with Google Search Grounding (paid key, ~$0.01-0.02/audit)
+- LLM probes use Gemini 2.5 Flash with Google Search Grounding (paid key, ~$0.01-0.02/audit)
 - SERP data from Serper.dev with configurable per-audit query cap (default 15, max 20)
 - Lighthouse / CWV via Google PageSpeed Insights API (free)
 - PDF report (generated lazily via Gemini narrative + `@react-pdf/renderer`, delivered by Resend)
@@ -57,7 +57,7 @@ Homepage is public. Clicking "Analyze" gates behind sign-up (Google OAuth or ema
   - Auth: Google OAuth + email magic-link, no passwords
   - Edge Functions (Deno, 150s budget) for audit orchestration
   - Realtime for progressive report updates
-- **LLM:** Gemini 2.0 Flash with Google Search Grounding (paid key)
+- **LLM:** Gemini 2.5 Flash with Google Search Grounding (paid key)
 - **SERP data:** Serper.dev (cap configurable per audit; default 15, max 20)
 - **Lighthouse / Core Web Vitals:** Google PageSpeed Insights API (free, optional key for higher quota)
 - **PDF generation:** `@react-pdf/renderer` (pure Node, no Chromium)
