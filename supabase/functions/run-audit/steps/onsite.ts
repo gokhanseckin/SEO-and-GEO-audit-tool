@@ -63,6 +63,9 @@ function computeIssues(pages: CrawledPage[]): OnsiteSection['issues'] {
     if (!p.viewport_set) issues.push({ severity: 'high', message: 'Missing viewport meta', page: p.url });
     if (p.schema_jsonld_count === 0) issues.push({ severity: 'low', message: 'No schema.org JSON-LD found', page: p.url });
     if (!p.https) issues.push({ severity: 'high', message: 'Not served over HTTPS', page: p.url });
+    if (p.robots_meta && /noindex/i.test(p.robots_meta)) {
+      issues.push({ severity: 'high', message: 'Page is set to noindex', page: p.url });
+    }
   }
   return issues;
 }
@@ -75,10 +78,10 @@ export async function runOnsite(audit: AuditRow): Promise<void> {
       return;
     }
     const [lighthouse, sitemap] = await Promise.all([
-      fetchLighthouse(`https://${audit.domain}/`).catch(() => ({
+      fetchLighthouse(`https://${audit.domain}/`).catch((e) => { console.error('lighthouse failed', e); return ({
         performance: null, accessibility: null, best_practices: null, seo: null,
         cwv: { lcp_ms: null, cls: null, inp_ms: null },
-      })),
+      }); }),
       checkSitemap(audit.domain),
     ]);
     const issues = computeIssues(cache);
