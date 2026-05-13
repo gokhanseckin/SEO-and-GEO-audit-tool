@@ -1,5 +1,6 @@
 import { loadAudit, setStatus, patchSection, getLastHeartbeat } from './lib/db.ts';
 import { runDescription } from './steps/description.ts';
+import { runOnsite } from './steps/onsite.ts';
 
 Deno.serve(async (req) => {
   let body: any;
@@ -12,6 +13,7 @@ Deno.serve(async (req) => {
       await setStatus(auditId, 'running');
       const audit = await loadAudit(auditId);
       await runDescription(audit);
+      await runOnsite(audit);
       await setStatus(auditId, 'complete', { completed_at: new Date().toISOString() });
     } catch (e) {
       console.error('audit failed', e);
