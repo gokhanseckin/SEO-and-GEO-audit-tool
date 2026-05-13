@@ -117,8 +117,10 @@ export function AnalyzeClient({ initialDomain }: { initialDomain: string }) {
             <button
               key={c.term}
               onClick={() => toggle(c.term)}
-              className={`px-3 py-1.5 text-sm rounded-full border ${
-                on ? 'bg-black text-white border-black' : 'bg-white text-gray-700 border-gray-300 hover:border-gray-500'
+              className={`px-3 py-1.5 text-sm rounded-full border transition ${
+                on
+                  ? 'bg-white text-black border-white'
+                  : 'bg-transparent text-gray-400 border-gray-700 hover:border-gray-400 hover:text-gray-200'
               }`}
               title={`relevance ${c.relevance.toFixed(2)} · ${c.type}`}
             >
