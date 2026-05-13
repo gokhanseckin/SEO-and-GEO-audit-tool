@@ -82,6 +82,23 @@ user_modified: true
 pages_crawled: 6
 ```
 
+## Branching strategy (going forward)
+
+From Phase C onwards, each phase lives on its own branch in its own git worktree:
+
+| Phase | Branch | Worktree path |
+|---|---|---|
+| C | `feat/phase-c-pipeline` | `../seo-geo-audit-tool-phase-c` |
+| D | `feat/phase-d-polish` | `../seo-geo-audit-tool-phase-d` |
+
+When a phase completes:
+1. Tag on the feature branch (e.g. `phase-c-complete`)
+2. Open a PR to `main` via `gh pr create`
+3. Merge after review
+4. Delete the worktree
+
+The resume prompt for Phase C is in [docs/PROMPT_PHASE_C.md](PROMPT_PHASE_C.md) — paste into a fresh Claude Code session.
+
 ## Phase C plan — what to do next
 
 The plan file `docs/superpowers/plans/2026-05-13-seo-geo-audit-tool.md` defines tasks C1 through C11. The subagent-driven workflow should resume with **Task C1: Edge Function scaffolding**.
