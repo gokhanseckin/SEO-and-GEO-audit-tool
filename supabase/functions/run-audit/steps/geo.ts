@@ -48,41 +48,46 @@ function extractCompetitorDomains(text: string, urls: { url: string; title: stri
   return Array.from(set).slice(0, 20);
 }
 
-const SPACING_MS = 1200;
-function sleep(ms: number) { return new Promise((r) => setTimeout(r, ms)); }
+const MAX_PROMPTS = 8;
+const BATCH_SIZE = 5;
+
+async function runOne(prompt: string, userDomain: string): Promise<PromptResult> {
+  try {
+    const r = await grounded(prompt);
+    return {
+      prompt,
+      answer_text: r.text,
+      user_domain_mentioned: findUserMention(r.text, r.citedUrls, userDomain).mentioned,
+      user_domain_rank: findUserMention(r.text, r.citedUrls, userDomain).rank,
+      competitor_domains: extractCompetitorDomains(r.text, r.citedUrls, userDomain),
+      cited_urls: r.citedUrls,
+    };
+  } catch (e) {
+    return {
+      prompt, answer_text: `ERROR: ${e}`,
+      user_domain_mentioned: false, user_domain_rank: null,
+      competitor_domains: [], cited_urls: [],
+    };
+  }
+}
 
 export async function runGeo(audit: AuditRow): Promise<{ citedUrls: { url: string; title: string }[] }> {
   const selected: string[] = ((audit.sections as any).keywords?.selected ?? []) as string[];
-  const prompts = selected.slice(0, 15).map(templateForKeyword);
+  const prompts = selected.slice(0, MAX_PROMPTS).map(templateForKeyword);
   const results: PromptResult[] = [];
   const allCited: { url: string; title: string }[] = [];
 
-  for (const p of prompts) {
-    try {
-      const r = await grounded(p);
-      const mention = findUserMention(r.text, r.citedUrls, audit.domain);
-      const competitors = extractCompetitorDomains(r.text, r.citedUrls, audit.domain);
-      results.push({
-        prompt: p,
-        answer_text: r.text,
-        user_domain_mentioned: mention.mentioned,
-        user_domain_rank: mention.rank,
-        competitor_domains: competitors,
-        cited_urls: r.citedUrls,
-      });
-      allCited.push(...r.citedUrls);
-      await patchSection(audit.id, 'geo', {
-        prompts: results,
-        visibility_score: Math.round((results.filter((x) => x.user_domain_mentioned).length / results.length) * 100),
-      });
-    } catch (e) {
-      results.push({
-        prompt: p, answer_text: `ERROR: ${e}`,
-        user_domain_mentioned: false, user_domain_rank: null,
-        competitor_domains: [], cited_urls: [],
-      });
-    }
-    await sleep(SPACING_MS);
+  for (let i = 0; i < prompts.length; i += BATCH_SIZE) {
+    const batch = prompts.slice(i, i + BATCH_SIZE);
+    const batchResults = await Promise.all(batch.map((p) => runOne(p, audit.domain)));
+    results.push(...batchResults);
+    for (const r of batchResults) allCited.push(...r.cited_urls);
+    await patchSection(audit.id, 'geo', {
+      prompts: results,
+      visibility_score: results.length
+        ? Math.round((results.filter((x) => x.user_domain_mentioned).length / results.length) * 100)
+        : 0,
+    });
   }
 
   return { citedUrls: allCited };

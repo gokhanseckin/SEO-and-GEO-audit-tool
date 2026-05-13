@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
   const auditId: string | undefined = body?.audit_id;
   if (!auditId) return new Response('missing audit_id', { status: 400 });
 
-  (async () => {
+  const work = (async () => {
     try {
       await setStatus(auditId, 'running');
       const audit = await loadAudit(auditId);
@@ -56,6 +56,8 @@ Deno.serve(async (req) => {
       await setStatus(auditId, 'failed', { error: String(e) }).catch(() => {});
     }
   })();
+  // @ts-ignore - EdgeRuntime is a Supabase Deploy runtime global
+  if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(work);
 
   return new Response(JSON.stringify({ accepted: true, audit_id: auditId }), {
     headers: { 'Content-Type': 'application/json' }, status: 202,
