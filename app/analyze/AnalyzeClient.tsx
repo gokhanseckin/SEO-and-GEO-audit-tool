@@ -228,6 +228,16 @@ export function AnalyzeClient({ initialDomain }: { initialDomain: string }) {
 }
 
 function AnalyzeLoading({ domain }: { domain: string }) {
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    const start = Date.now();
+    const t = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - start) / 1000));
+    }, 250);
+    return () => clearInterval(t);
+  }, []);
+  // Linear ramp 5% → 90% over ~28s, then asymptote.
+  const progress = Math.min(90, 5 + elapsed * 3);
   return (
     <div className="surface" style={{ padding: 32, maxWidth: 780 }}>
       <div
@@ -288,13 +298,13 @@ function AnalyzeLoading({ domain }: { domain: string }) {
               top: 0,
               left: 0,
               height: '100%',
-              width: '40%',
+              width: `${progress}%`,
               background: 'var(--signal)',
               boxShadow: '0 0 10px oklch(0.86 0.19 130 / 0.5)',
-              animation: 'shimmer 1.6s linear infinite',
               backgroundImage:
                 'linear-gradient(90deg, var(--signal) 0%, oklch(0.92 0.18 130) 50%, var(--signal) 100%)',
               backgroundSize: '200% 100%',
+              transition: 'width 0.4s linear',
             }}
           />
         </div>
@@ -304,7 +314,7 @@ function AnalyzeLoading({ domain }: { domain: string }) {
         >
           <span>working</span>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            <LoadingDot /> ~10s
+            <LoadingDot /> {elapsed}s
           </span>
         </div>
       </div>
