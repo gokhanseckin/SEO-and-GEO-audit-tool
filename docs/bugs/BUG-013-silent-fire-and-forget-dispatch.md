@@ -83,3 +83,16 @@ Added `__tests__/app/api/audits/run.test.ts` covering:
 ---
 
 **Status:** Fixed in `53504a1`.
+
+## Follow-up: prevent verify_jwt regression
+
+To stop a future bare `supabase functions deploy run-audit` from re-introducing the same 401, two guardrails were added:
+
+1. **`supabase/config.toml`** now pins per-function config:
+   ```toml
+   [functions.run-audit]
+   verify_jwt = false
+   ```
+   The Supabase CLI respects this on deploy — the `--no-verify-jwt` flag becomes redundant.
+
+2. **`package.json`** adds an `npm run deploy:fn` script that always passes `--no-verify-jwt`, as belt-and-suspenders.

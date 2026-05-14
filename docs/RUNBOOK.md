@@ -56,8 +56,14 @@ This applies the three migrations in `supabase/migrations/` in order:
 ### 1.4 Deploy the Edge Function
 
 ```bash
+# Convenience script (pinned --no-verify-jwt + project ref):
+npm run deploy:fn
+
+# Or invoke the CLI directly:
 supabase functions deploy run-audit --no-verify-jwt --project-ref <REF>
 ```
+
+`--no-verify-jwt` is **required**. The function is internal-only — dispatched server-to-server from Next.js routes with the service-role key, never from a browser. With JWT verification on, the gateway rejects the service-role bearer with 401 and silently strands audits (see [BUG-013](bugs/BUG-013-silent-fire-and-forget-dispatch.md)). `supabase/config.toml` pins `verify_jwt = false` for `run-audit` so any deploy method respects it.
 
 ### 1.5 Seed admin access
 
