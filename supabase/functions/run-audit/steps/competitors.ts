@@ -4,6 +4,17 @@ import { summarizeCompetitor } from '../lib/gemini.ts';
 import { serperSearch, SerperBudget, domainFromUrl } from '../lib/serper.ts';
 import type { AuditRow } from '../lib/types.ts';
 
+const FETCH_ERROR_RE = /^(?:fetch failed|TypeError: Failed to fetch|HTTP \d{3}|timeout|Could not access|^The (?:URL|page) could not be)/i;
+
+function safeSummary(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const t = raw.trim();
+  if (!t) return null;
+  if (FETCH_ERROR_RE.test(t)) return null;
+  if (t.length < 20) return null; // implausibly short → likely error
+  return t;
+}
+
 function htmlMeta(html: string): { title: string; meta: string } {
   const t = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(html)?.[1]?.trim() ?? '';
   const m = /<meta\s+name=["']description["']\s+content=["']([^"']*)["']/i.exec(html)?.[1]?.trim() ?? '';
@@ -64,13 +75,13 @@ export async function runCompetitors(audit: AuditRow, budget: SerperBudget): Pro
       try {
         const html = await fetchText(`https://${d}/`, 5000);
         const { title, meta } = htmlMeta(html);
-        const summary = await summarizeCompetitor(d, `${title}\n\n${meta}\n\n${html.slice(0, 3000)}`);
+        const summary = safeSummary(await summarizeCompetitor(d, `${title}\n\n${meta}\n\n${html.slice(0, 3000)}`));
         const sources: string[] = [];
         if (combined.get(d)?.serp) sources.push('serp');
         if (combined.get(d)?.llm) sources.push('llm');
         enriched.push({ domain: d, title, meta_desc: meta, summary, sources });
       } catch (e) {
-        enriched.push({ domain: d, title: '', meta_desc: '', summary: `(fetch failed: ${e})`, sources: [] });
+        enriched.push({ domain: d, title: '', meta_desc: '', summary: null, sources: [] });
       }
     }
 
