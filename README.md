@@ -1,70 +1,126 @@
-# SEO and GEO Audit Tool
+# SEO + GEO Audit Tool
 
-A web app that runs a single comprehensive SEO + GEO (Generative Engine Optimization) audit on a domain. Covers traditional onsite/offsite SEO plus LLM visibility — does Gemini recommend your domain when asked, who are your competitors in LLM answers, and what articles should you write next.
+Full-stack audit tool that runs a Supabase Edge Function pipeline against a domain: on-site SEO,
+off-site authority, GEO (Generative Engine Optimization) visibility, competitor landscape, and
+article opportunities. Delivers a live-updating server-rendered report and an emailable PDF.
 
-## Status
+---
 
-**Phase B complete.** Auth, homepage, Phase-1 site crawl, Gemini keyword extraction, and keyword confirmation page are working end-to-end against a live Supabase project. Phase C (the full audit pipeline) is next.
+## Tech stack
 
-Phase tags in git:
-- `phase-a-complete` — scaffolding, Supabase setup, auth, homepage
-- `phase-b-complete` — keyword extraction flow (Phase 1 audit)
-- *(upcoming)* `phase-c-complete` — full audit pipeline
-- *(upcoming)* `v1.0.0` — final release
+| Layer | Version |
+|---|---|
+| Next.js (App Router) | 16.2.6 |
+| React | 19.2 |
+| Tailwind CSS v4 | via `postcss.config.mjs` — no `tailwind.config.ts` |
+| Supabase | Postgres + Auth + Edge Functions + pg_cron |
+| Edge Function runtime | Deno (Supabase Deploy) |
+| LLM | Gemini 2.5 Flash |
+| SERP data | Serper |
+| Core Web Vitals | Google PageSpeed Insights API |
+| Transactional email | Resend |
+| PDF generation | `@react-pdf/renderer` 4.5 (server-side) |
+| Unit tests | Vitest 4.1 |
+| E2E tests | Playwright 1.60 |
 
-- Design spec: [docs/superpowers/specs/2026-05-13-seo-geo-audit-design.md](docs/superpowers/specs/2026-05-13-seo-geo-audit-design.md)
-- Implementation plan: [docs/superpowers/plans/2026-05-13-seo-geo-audit-tool.md](docs/superpowers/plans/2026-05-13-seo-geo-audit-tool.md)
-- Session handoff (to resume in a fresh context): [docs/HANDOFF.md](docs/HANDOFF.md)
+---
 
-## Stack
-
-- Next.js 16 App Router + TypeScript on Vercel (plan was written for 15; create-next-app shipped 16)
-- Tailwind CSS v4 (CSS-config, no `tailwind.config.ts`)
-- Supabase (Postgres, Auth, Realtime, Edge Functions)
-- Gemini 2.5 Flash with Google Search Grounding
-- Serper.dev for SERP data
-- Google PageSpeed Insights for Lighthouse / Core Web Vitals
-- Resend for transactional email
-- `@react-pdf/renderer` for PDF reports
-- Vitest + Playwright for tests
-
-### Supabase API keys
-
-We use the modern **publishable** + **secret** key pair (`sb_publishable_...` / `sb_secret_...`), not the legacy `anon` / `service_role` JWTs. The env var names `NEXT_PUBLIC_SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` are kept for compatibility — the new keys are drop-in replacements at the `@supabase/ssr` layer.
-
-## v1 scope highlights
-
-- Public homepage → Auth gate → 1 free audit per account (lifetime)
-- Progressive report rendering (sections fill in as each pipeline step completes)
-- "Send PDF to my email" button
-- Admin role with 20 audits/UTC-day quota
-- LLM provider abstraction (only Gemini wired up in v1, ready for DeepSeek/Claude/Perplexity)
-
-## Development
+## Local quickstart
 
 ```bash
+git clone <repo>
+cd seo-geo-audit-tool
 npm install
-cp .env.example .env.local   # fill in values (Supabase, Gemini; Serper/Resend/PageSpeed needed for Phase C+)
-npm run dev                  # http://localhost:3000
-npm test                     # vitest
-npm run build                # production build sanity check
+cp .env.example .env.local
+# fill in keys — see "Environment variables" below
+npm run dev
+# open http://localhost:3000
 ```
 
-### Re-applying DB migrations
+---
 
-Migrations live in `supabase/migrations/`. Apply via Supabase MCP (`apply_migration`) or the Supabase CLI (`supabase db push`). The initial schema migration has already been applied to the production project `iimkmrwcdymuyhmeyate`.
+## Environment variables
 
-### Deploying changes
+`.env.local` is read by Next.js. The Edge Function reads from Supabase secrets
+(`supabase secrets set …`). Keep both in sync for deployed environments.
+
+| Key | Where to obtain | Used by |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase dashboard → Settings → API | Next.js (client + server) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase dashboard → Settings → API (publishable key) | Next.js |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase dashboard → Settings → API (secret key) | Next.js server + Edge Function |
+| `GEMINI_API_KEY` | https://aistudio.google.com/apikey | Edge Function |
+| `SERPER_API_KEY` | https://serper.dev | Edge Function |
+| `PAGESPEED_API_KEY` | Google Cloud → PageSpeed Insights API (optional, raises quota) | Edge Function |
+| `RESEND_API_KEY` | https://resend.com/api-keys | Next.js + Edge Function |
+| `RESEND_FROM_EMAIL` | Verified sender on Resend | Next.js + Edge Function |
+| `APP_URL` | Your deployed URL (or `http://localhost:3000` for dev) | Edge Function (email links) |
+| `SERPER_QUERY_CAP_DEFAULT` | Integer 1–20, default `15` | Next.js (per-audit budget) |
+
+> Note: the `NEXT_PUBLIC_SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` env var names are
+> kept for compatibility; the project uses the modern `sb_publishable_…` / `sb_secret_…` key
+> format — they are drop-in replacements at the `@supabase/ssr` layer.
+
+---
+
+## Architecture
+
+```
+Browser (Next.js 16)
+  │
+  ├── POST /api/audits/start ──> INSERT audits row (status='pending')
+  │                               │
+  │                               └─> POST /api/audits/[id]/run ──> Supabase Edge Function
+  │                                         (Authorization: Bearer SERVICE_ROLE_KEY)
+  │                                         │
+  │                                         └─> Deno + EdgeRuntime.waitUntil(work)
+  │
+  │   Edge Function pipeline (run-audit)
+  │   ├── Parallel fanout:
+  │   │   ├── steps/description.ts   (Gemini — domain summary)
+  │   │   ├── steps/onsite.ts        (fetch + sitemap + PSI / Core Web Vitals)
+  │   │   ├── steps/offsite.ts       (Serper + Gemini — backlink signals)
+  │   │   └── steps/geo.ts           (Gemini grounded search — 8 prompts, 5 concurrent)
+  │   │
+  │   └── After geo resolves:
+  │       ├── steps/competitors.ts   (Serper + Gemini, uses geo cited URLs)
+  │       └── steps/article-recs.ts  (Gemini, uses geo cited URLs)
+  │
+  │   Each step writes via audit_patch_section RPC (atomic JSONB merge)
+  │   Heartbeat written every 15 s; watchdog pg_cron job marks rows failed
+  │   if heartbeat goes stale >= 2 min
+  │
+  └── GET /report/[id]  (Realtime subscription — sections appear as they land)
+       └── "Email PDF" button -> POST /api/audits/[id]/send-pdf
+```
+
+Key safety nets:
+- **`audit_patch_section` RPC** — atomic JSONB merge; prevents concurrent-write data loss
+- **`audit_watchdog_sweep` pg_cron** — flips stuck `running` rows to `failed` every minute
+- **`admin_emails` allowlist** — gates the `/admin` dashboard
+- **`EdgeRuntime.waitUntil`** — pipeline survives after the HTTP 202 response returns
+
+---
+
+## Common commands
 
 ```bash
-# DB migrations
-supabase db push
-
-# Edge Function (Phase C onwards)
-supabase functions deploy run-audit --no-verify-jwt
-
-# App (Vercel auto-deploys on push to main once connected; not yet connected)
-git push origin main
+npm run dev          # Next.js dev server (Turbopack)
+npm run build        # production build
+npm test             # vitest unit tests
+npm run test:watch   # vitest in watch mode
+npm run test:e2e     # Playwright e2e (set E2E_REAL_RUN=1 for network-hitting tests)
 ```
 
-See [docs/HANDOFF.md](docs/HANDOFF.md) for the current project state and next steps.
+---
+
+## Deploy
+
+See **[docs/RUNBOOK.md](docs/RUNBOOK.md)** for step-by-step Supabase + Vercel deployment instructions.
+
+---
+
+## Known issues & roadmap
+
+Billing, multi-tenant workspaces, and scheduled re-audits are explicit non-goals for v1.
+See [docs/HANDOFF.md](docs/HANDOFF.md) for current project state and open items.
