@@ -43,16 +43,33 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     .eq('id', id);
   if (upErr) return NextResponse.json({ error: 'update_failed', detail: upErr.message }, { status: 500 });
 
-  // Dispatch Edge Function (fire-and-forget)
   const fnUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/run-audit`;
-  fetch(fnUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-    },
-    body: JSON.stringify({ audit_id: id }),
-  }).catch((e) => console.error('edge dispatch failed:', e));
+  let dispatch: Response;
+  try {
+    dispatch = await fetch(fnUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+      },
+      body: JSON.stringify({ audit_id: id }),
+    });
+  } catch (e) {
+    await svc.from('audits').update({
+      status: 'failed',
+      error: `edge_dispatch_network: ${String(e).slice(0, 500)}`,
+    }).eq('id', id);
+    return NextResponse.json({ error: 'dispatch_failed', detail: String(e) }, { status: 502 });
+  }
+
+  if (!dispatch.ok) {
+    const detail = await dispatch.text();
+    await svc.from('audits').update({
+      status: 'failed',
+      error: `edge_dispatch_${dispatch.status}: ${detail.slice(0, 500)}`,
+    }).eq('id', id);
+    return NextResponse.json({ error: 'dispatch_failed', status: dispatch.status, detail }, { status: 502 });
+  }
 
   return NextResponse.json({ ok: true }, { status: 202 });
 }

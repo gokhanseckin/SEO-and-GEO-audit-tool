@@ -14,3 +14,4 @@
 | [BUG-010](BUG-010-realtime-replace-clobbers-state.md) | High | Frontend / Realtime | Realtime UPDATE handler clobbers state with truncated payload (report blanks on viewing) | Fixed in `49a4032` |
 | [BUG-011](BUG-011-heartbeat-keeps-firing-after-complete.md) | Medium | Backend / API | Heartbeat endpoint accepts pings for terminal audits | Fixed in `49a4032` |
 | [BUG-012](BUG-012-indexed-pages-capped-at-10.md) | Medium | Backend / UI | Indexed pages estimate pinned at 10 (reads `organic.length` instead of `searchInformation.totalResults`) | Fixed in `6eabe7c` |
+| [BUG-013](BUG-013-silent-fire-and-forget-dispatch.md) | High | Backend / API | Silent fire-and-forget Edge Function dispatch strands audits in `status='running'` when gateway rejects | Fixed (pending commit) |
