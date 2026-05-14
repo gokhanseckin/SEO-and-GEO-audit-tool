@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import type { User } from '@supabase/supabase-js';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { isValidDomain, normalizeDomain } from '@/lib/domain';
 import { createClient } from '@/lib/supabase/client';
@@ -43,8 +44,35 @@ export default function HomePage() {
   const [submitting, setSubmitting] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [pendingDomain, setPendingDomain] = useState<string | undefined>();
+  const [user, setUser] = useState<User | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
   const router = useRouter();
   const supabase = createClient();
+
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getUser().then(({ data }) => {
+      if (mounted) setUser(data.user ?? null);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (mounted) setUser(session?.user ?? null);
+    });
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
+  }, [supabase]);
+
+  async function onSignOut() {
+    setSigningOut(true);
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      router.refresh();
+    } finally {
+      setSigningOut(false);
+    }
+  }
 
   async function onAnalyze() {
     const normalized = normalizeDomain(domain);
@@ -99,9 +127,20 @@ export default function HomePage() {
         <Logo />
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <span className="eyebrow hidden sm:inline">v1 · free · 1 audit per account</span>
-          <button className="btn btn-ghost btn-sm" onClick={() => setAuthOpen(true)}>
-            Sign in
-          </button>
+          {user ? (
+            <>
+              <span className="eyebrow hidden sm:inline" style={{ color: 'var(--fg-3)' }} title={user.email ?? ''}>
+                {user.email}
+              </span>
+              <button className="btn btn-ghost btn-sm" onClick={onSignOut} disabled={signingOut}>
+                {signingOut ? 'Signing out…' : 'Sign out'}
+              </button>
+            </>
+          ) : (
+            <button className="btn btn-ghost btn-sm" onClick={() => setAuthOpen(true)}>
+              Sign in
+            </button>
+          )}
         </div>
       </header>
 
