@@ -8,6 +8,9 @@ import { runCompetitors } from './steps/competitors.ts';
 import { runArticleRecs } from './steps/article-recs.ts';
 import { sendCompletionEmail } from './lib/email.ts';
 
+// On DB outage, getLastHeartbeat throws and bubbles to the orchestrator try/catch,
+// which sets status='failed'. We do NOT send the completion email in that path —
+// the user will see a failed audit and can retry.
 async function maybeSendCompletionEmail(auditId: string): Promise<void> {
   const last = await getLastHeartbeat(auditId);
   if (!last) {

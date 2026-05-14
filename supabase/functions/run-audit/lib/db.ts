@@ -33,6 +33,7 @@ export async function setStatus(
 }
 
 export async function getLastHeartbeat(auditId: string): Promise<string | null> {
-  const { data } = await db().from('audits').select('last_heartbeat_at').eq('id', auditId).single();
+  const { data, error } = await db().from('audits').select('last_heartbeat_at').eq('id', auditId).single();
+  if (error) throw error;
   return (data?.last_heartbeat_at ?? null) as string | null;
 }
