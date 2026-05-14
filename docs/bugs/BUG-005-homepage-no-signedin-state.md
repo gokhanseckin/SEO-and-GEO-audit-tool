@@ -40,3 +40,10 @@ Keep AuthModal flow intact for the unsigned case.
 ## Workaround for users hitting this in production
 
 DevTools → Application → Cookies → `seo-geo-audit-tool.vercel.app` → delete every cookie starting with `sb-iimkmrwcdymuyhmeyate-` → hard refresh.
+
+
+---
+
+**Status:** Fixed in `6e3c9f0`.
+
+Homepage now tracks auth state via supabase.auth.getUser() + onAuthStateChange subscription; renders user email + Sign out button when authenticated, falls back to Sign in button otherwise.
