@@ -1,3 +1,4 @@
+import { DOMParser, type Element } from 'jsr:@b-fuze/deno-dom';
 import { patchSection } from '../lib/db.ts';
 import { fetchJson, fetchText } from '../lib/fetch.ts';
 import type { AuditRow, CrawledPage, OnsiteSection } from '../lib/types.ts';
@@ -29,7 +30,9 @@ async function fetchLighthouse(url: string): Promise<OnsiteSection['lighthouse']
 async function checkSitemap(domain: string): Promise<{ found: boolean; url_count: number }> {
   try {
     const xml = await fetchText(`https://${domain}/sitemap.xml`, 5000);
-    const urlCount = (xml.match(/<loc>/g) || []).length;
+    const doc = new DOMParser().parseFromString(xml, 'text/html');
+    const locs = (doc?.querySelectorAll('loc') ?? []) as unknown as Element[];
+    const urlCount = locs.length;
     return { found: urlCount > 0, url_count: urlCount };
   } catch { return { found: false, url_count: 0 }; }
 }
