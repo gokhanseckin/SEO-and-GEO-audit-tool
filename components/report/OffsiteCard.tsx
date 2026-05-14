@@ -58,7 +58,11 @@ export function OffsiteCard({ data }: { data?: Data }) {
         />
         <StatTile
           label="Indexed pages"
-          value={data?.indexed_pages_estimate ?? '—'}
+          value={
+            data?.indexed_pages_estimate != null
+              ? data.indexed_pages_estimate.toLocaleString()
+              : '—'
+          }
           unit=""
           note="Google site: query estimate"
         />

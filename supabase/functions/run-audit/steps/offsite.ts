@@ -31,7 +31,11 @@ export async function runOffsite(audit: AuditRow, budget: SerperBudget): Promise
       serperSearch(audit.domain.split('.')[0], budget).catch(() => null),
     ]);
 
-    const indexedPagesEstimate = siteSerp?.organic?.length ?? 0;
+    const rawTotal = siteSerp?.searchInformation?.totalResults;
+    const parsedTotal = rawTotal != null ? Number(rawTotal) : NaN;
+    const indexedPagesEstimate = Number.isFinite(parsedTotal)
+      ? parsedTotal
+      : siteSerp?.organic?.length ?? 0;
     const brandMentions = brandSerp?.organic?.filter(
       (r) => domainFromUrl(r.link ?? '') === audit.domain
     ).length ?? 0;
