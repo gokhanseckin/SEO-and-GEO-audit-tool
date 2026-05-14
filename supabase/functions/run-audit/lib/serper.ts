@@ -1,6 +1,7 @@
 export interface SerperResult {
   organic?: { title?: string; link?: string; snippet?: string; position?: number }[];
   knowledgeGraph?: { website?: string; title?: string };
+  searchInformation?: { totalResults?: string };
 }
 
 const KEY = Deno.env.get('SERPER_API_KEY')!;
