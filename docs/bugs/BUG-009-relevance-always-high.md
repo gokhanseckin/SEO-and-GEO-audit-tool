@@ -84,3 +84,10 @@ Start with **A** (prompt rubric). If after retesting the spread is still narrow 
 ## Not in scope for v1
 
 The smoke caught this but fixing it well requires retesting against several real domains to see how the distribution shifts. Not blocking ship. Track as a v1.1 polish item.
+
+
+---
+
+**Status:** Fix attempt A shipped in `e3d9232`.
+
+Rewrote extractKeywords prompt with explicit 5-band rubric (0.9-1.0 core, 0.7-0.89 direct, 0.5-0.69 adjacent, 0.3-0.49 tangential, 0.0-0.29 off-topic) and added two hard requirements: at least 5 candidates must score below 0.70 and scores must distribute across the full 0..1 range. If the spread is still too narrow on retest, escalate to option B (client-side percentile bucketing).
