@@ -44,3 +44,6 @@ playwright/.cache/
 # Misc
 *.local
 .vercel
+
+# Claude Code session data
+.claude/
