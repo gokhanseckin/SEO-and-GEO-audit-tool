@@ -68,12 +68,19 @@ export function ReportClient({ initialAudit, userEmail }: { initialAudit: AuditP
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
+    // Supabase Realtime can truncate `payload.new` when the row's JSONB exceeds its
+    // payload size limit (commonly hit when `onsite_crawl_cache` is populated).
+    // Use the event only as a notification; refetch the full row via REST.
+    // Closes BUG-010.
     const channel = supabase
       .channel(`audit-${audit.id}`)
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'audits', filter: `id=eq.${audit.id}` },
-        (payload) => setAudit(payload.new as AuditPayload)
+        async () => {
+          const { data } = await supabase.from('audits').select('*').eq('id', audit.id).single();
+          if (data) setAudit(data as AuditPayload);
+        }
       )
       .subscribe();
     return () => {
