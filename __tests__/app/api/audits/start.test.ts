@@ -31,9 +31,19 @@ vi.mock('@/lib/llm/gemini', () => ({
 
 import { POST } from '@/app/api/audits/start/route';
 
-function chain(returnValue: any) {
+function chain(returnValue: any, options: { inReturnValue?: any } = {}) {
   const c: any = {};
   c.select = () => c; c.eq = () => c; c.order = () => c; c.limit = () => c;
+  // `.in()` is used by the same-domain dedup query in /api/audits/start.
+  // Default: returns a sub-chain that resolves with null (no pending dup).
+  c.in = () => {
+    const inChain: any = {};
+    inChain.select = () => inChain; inChain.eq = () => inChain;
+    inChain.in = () => inChain; inChain.order = () => inChain; inChain.limit = () => inChain;
+    inChain.maybeSingle = () => Promise.resolve({ data: options.inReturnValue ?? null, error: null });
+    inChain.single = () => Promise.resolve({ data: options.inReturnValue ?? null, error: null });
+    return inChain;
+  };
   c.maybeSingle = () => Promise.resolve({ data: returnValue, error: null });
   c.single = () => Promise.resolve({ data: returnValue, error: null });
   c.insert = (row: any) => ({ select: () => ({ single: () => Promise.resolve({ data: { ...row, id: 'audit-1' }, error: null }) }) });
@@ -87,5 +97,19 @@ describe('POST /api/audits/start', () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.audit_id).toBe('audit-1');
+  });
+
+  it('dedups: returns existing audit id when same-domain pending audit exists (closes BUG-006)', async () => {
+    mockSupabase.from.mockImplementation((table: string) => {
+      if (table === 'profiles') return chain(mockProfile);
+      if (table === 'audits') return chain(null, { inReturnValue: { id: 'pending-dup-1', status: 'pending' } });
+      return chain(null);
+    });
+    const res = await POST(new Request('http://localhost/api/audits/start', {
+      method: 'POST', body: JSON.stringify({ domain: 'example.com' }),
+    }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.audit_id).toBe('pending-dup-1');
   });
 });

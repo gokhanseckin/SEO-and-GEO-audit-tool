@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import type { User } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/ds/Logo';
 import { Icon } from '@/components/ds/Icon';
 import { StepDot, LoadingDot } from '@/components/ds/StepDot';
@@ -19,6 +21,33 @@ export function AnalyzeClient({ initialDomain }: { initialDomain: string }) {
   const [pagesCrawled, setPagesCrawled] = useState<number | null>(null);
   const [sitemapCount, setSitemapCount] = useState<number | null>(null);
   const [explainerOpen, setExplainerOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
+  const supabase = createClient();
+
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getUser().then(({ data }) => {
+      if (mounted) setUser(data.user ?? null);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (mounted) setUser(session?.user ?? null);
+    });
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
+  }, [supabase]);
+
+  async function onSignOut() {
+    setSigningOut(true);
+    try {
+      await supabase.auth.signOut();
+      router.push('/');
+    } finally {
+      setSigningOut(false);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -127,6 +156,16 @@ export function AnalyzeClient({ initialDomain }: { initialDomain: string }) {
             <span style={{ color: 'var(--fg-3)' }}>keywords</span>
           </div>
         </div>
+        {user && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span className="eyebrow hidden sm:inline" style={{ color: 'var(--fg-3)' }} title={user.email ?? ''}>
+              {user.email}
+            </span>
+            <button className="btn btn-ghost btn-sm" onClick={onSignOut} disabled={signingOut}>
+              {signingOut ? 'Signing out…' : 'Sign out'}
+            </button>
+          </div>
+        )}
       </header>
 
       <div style={{ maxWidth: 1080, margin: '0 auto', padding: 'clamp(28px, 5vw, 48px) clamp(20px, 4vw, 48px) 80px' }}>
