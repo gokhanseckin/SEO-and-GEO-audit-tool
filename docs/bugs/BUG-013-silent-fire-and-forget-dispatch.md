@@ -82,4 +82,4 @@ Added `__tests__/app/api/audits/run.test.ts` covering:
 
 ---
 
-**Status:** Fixed in `<COMMIT_SHA>`.
+**Status:** Fixed in `53504a1`.
