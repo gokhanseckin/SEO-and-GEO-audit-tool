@@ -12,8 +12,7 @@ const WebSocketImpl = require('ws');
 
 // Polyfill once — safe to call multiple times (idempotent check).
 if (typeof globalThis.WebSocket === 'undefined') {
-  // @ts-expect-error: polyfilling WebSocket for Node < 22
-  globalThis.WebSocket = WebSocketImpl;
+  (globalThis as { WebSocket: unknown }).WebSocket = WebSocketImpl;
 }
 
 export function createServiceClient() {
