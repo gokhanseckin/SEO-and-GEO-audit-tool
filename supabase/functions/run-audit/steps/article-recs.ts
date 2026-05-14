@@ -1,7 +1,7 @@
 import { patchSection } from '../lib/db.ts';
 import { fetchText } from '../lib/fetch.ts';
 import { recommendArticles } from '../lib/gemini.ts';
-import type { AuditRow, CrawledPage } from '../lib/types.ts';
+import type { AuditRow } from '../lib/types.ts';
 
 function htmlMeta(html: string): { title: string; meta: string } {
   const t = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(html)?.[1]?.trim() ?? '';
@@ -11,8 +11,8 @@ function htmlMeta(html: string): { title: string; meta: string } {
 
 export async function runArticleRecs(audit: AuditRow, allCitedUrls: { url: string; title: string }[]): Promise<void> {
   try {
-    const selected: string[] = ((audit.sections as any).keywords?.selected ?? []) as string[];
-    const crawl = (audit.sections as any).onsite_crawl_cache as CrawledPage[] | undefined;
+    const selected: string[] = audit.sections.keywords?.selected ?? [];
+    const crawl = audit.sections.onsite_crawl_cache;
     const userTitles = (crawl ?? []).map((p) => p.title ?? p.url);
 
     const seen = new Set<string>();

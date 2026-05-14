@@ -2,7 +2,7 @@ import { patchSection } from '../lib/db.ts';
 import { fetchText } from '../lib/fetch.ts';
 import { summarizeCompetitor } from '../lib/gemini.ts';
 import { serperSearch, SerperBudget, domainFromUrl } from '../lib/serper.ts';
-import type { AuditRow } from '../lib/types.ts';
+import type { AuditRow, GeoSection } from '../lib/types.ts';
 
 const FETCH_ERROR_RE = /^(?:fetch failed|TypeError: Failed to fetch|HTTP \d{3}|timeout|Could not access|^The (?:URL|page) could not be)/i;
 
@@ -23,8 +23,8 @@ function htmlMeta(html: string): { title: string; meta: string } {
 
 export async function runCompetitors(audit: AuditRow, budget: SerperBudget): Promise<void> {
   try {
-    const selected: string[] = ((audit.sections as any).keywords?.selected ?? []) as string[];
-    const geo = (audit.sections as any).geo;
+    const selected: string[] = audit.sections.keywords?.selected ?? [];
+    const geo: GeoSection | undefined = audit.sections.geo;
 
     const serpDomainTally = new Map<string, { appearances: number; sumPos: number }>();
     for (const kw of selected) {
@@ -47,7 +47,7 @@ export async function runCompetitors(audit: AuditRow, budget: SerperBudget): Pro
 
     const llmTally = new Map<string, { appearances: number; cited: Set<string> }>();
     for (const p of geo?.prompts ?? []) {
-      for (const d of p.competitor_domains as string[]) {
+      for (const d of p.competitor_domains) {
         const cur = llmTally.get(d) ?? { appearances: 0, cited: new Set<string>() };
         cur.appearances += 1;
         for (const u of p.cited_urls ?? []) {

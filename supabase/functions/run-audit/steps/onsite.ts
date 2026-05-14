@@ -1,21 +1,6 @@
 import { patchSection } from '../lib/db.ts';
 import { fetchJson, fetchText } from '../lib/fetch.ts';
-import type { AuditRow, CrawledPage } from '../lib/types.ts';
-
-interface OnsiteSection {
-  pages_crawled: CrawledPage[];
-  lighthouse: {
-    performance: number | null;
-    accessibility: number | null;
-    best_practices: number | null;
-    seo: number | null;
-    cwv: { lcp_ms: number | null; cls: number | null; inp_ms: number | null };
-  };
-  issues: { severity: 'high' | 'med' | 'low'; message: string; page: string }[];
-  sitemap_found: boolean;
-  sitemap_url_count: number;
-  error?: string;
-}
+import type { AuditRow, CrawledPage, OnsiteSection } from '../lib/types.ts';
 
 async function fetchLighthouse(url: string): Promise<OnsiteSection['lighthouse']> {
   const key = Deno.env.get('PAGESPEED_API_KEY');
@@ -72,7 +57,7 @@ function computeIssues(pages: CrawledPage[]): OnsiteSection['issues'] {
 
 export async function runOnsite(audit: AuditRow): Promise<void> {
   try {
-    const cache = (audit.sections as any).onsite_crawl_cache as CrawledPage[] | undefined;
+    const cache = audit.sections.onsite_crawl_cache;
     if (!cache?.length) {
       await patchSection(audit.id, 'onsite', { error: 'no_crawl_cache' });
       return;
