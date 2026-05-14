@@ -29,3 +29,10 @@ Mirror the BUG-005 fix on the homepage:
 - Sign-out handler calls `supabase.auth.signOut()` and pushes `/`
 
 Same import + state + effect + handler pattern as `app/page.tsx`.
+
+
+---
+
+**Status:** Fixed in `2ce5015`.
+
+AnalyzeClient.tsx now tracks auth state and renders user email + Sign out button on the right of the header when authenticated. Mirrors BUG-005 fix.

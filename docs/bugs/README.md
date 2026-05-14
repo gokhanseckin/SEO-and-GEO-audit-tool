@@ -7,3 +7,5 @@
 | [BUG-003](BUG-003-enriched-competitor-fetch-failed-summary.md) | Medium | Backend | Enriched competitor cards show literal fetch-error string as Gemini summary | Fixed in `9588e7d` |
 | [BUG-004](BUG-004-grounding-redirect-as-source-url.md) | Medium | Backend | Article and GEO citations use Gemini grounding-redirect URLs instead of real source URLs | Fixed in `1155866` |
 | [BUG-005](BUG-005-homepage-no-signedin-state.md) | Medium | UI / Auth | Homepage doesn't reflect signed-in state; no sign-out button | Fixed in `6e3c9f0` |
+| [BUG-006](BUG-006-duplicate-pending-audits-on-resubmit.md) | Medium | Backend / UX | Resubmitting same domain creates duplicate pending audits | Fixed in `2ce5015` |
+| [BUG-007](BUG-007-analyze-page-no-signout.md) | Low | UI / Auth | `/analyze` page has no sign-out button or auth state in header | Fixed in `2ce5015` |

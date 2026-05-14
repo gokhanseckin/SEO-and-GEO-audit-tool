@@ -94,3 +94,10 @@ delete from public.audits
    and started_at is null
 returning id, domain;
 ```
+
+
+---
+
+**Status:** Fixed in `2ce5015`.
+
+Server-side dedup in /api/audits/start checks for existing (user_id, domain) audit in pending/running status before insert; returns the existing audit_id if found instead of creating a duplicate row.
