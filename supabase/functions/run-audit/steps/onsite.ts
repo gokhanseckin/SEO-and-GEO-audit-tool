@@ -86,7 +86,7 @@ export async function runOnsite(audit: AuditRow): Promise<void> {
     ]);
     const issues = computeIssues(cache);
     const section: OnsiteSection = {
-      pages_crawled: cache,
+      pages_crawled: cache.map((p) => ({ ...p, text_content: undefined })),
       lighthouse,
       issues,
       sitemap_found: sitemap.found,
