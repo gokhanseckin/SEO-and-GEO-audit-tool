@@ -62,6 +62,8 @@ export function ReportClient({ initialAudit, userEmail }: { initialAudit: AuditP
   const [now, setNow] = useState<number>(() => Date.now());
   const [pdfBusy, setPdfBusy] = useState(false);
   const [pdfMsg, setPdfMsg] = useState<string | null>(null);
+  const [retryBusy, setRetryBusy] = useState(false);
+  const [retryMsg, setRetryMsg] = useState<string | null>(null);
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
 
@@ -111,6 +113,15 @@ export function ReportClient({ initialAudit, userEmail }: { initialAudit: AuditP
   type CompetitorsData = Parameters<typeof CompetitorTabs>[0]['data'];
   type ArticlesData = Parameters<typeof ArticleRecsGrid>[0]['data'];
 
+  async function retry() {
+    setRetryBusy(true); setRetryMsg(null);
+    try {
+      const r = await fetch(`/api/audits/${audit.id}/retry`, { method: 'POST' });
+      const j = await r.json();
+      setRetryMsg(r.ok ? 'Retry dispatched — refresh in a few seconds.' : `Failed: ${j.error}`);
+    } finally { setRetryBusy(false); }
+  }
+
   async function sendPdf() {
     setPdfBusy(true);
     setPdfMsg(null);
@@ -142,6 +153,15 @@ export function ReportClient({ initialAudit, userEmail }: { initialAudit: AuditP
             {pdfBusy ? 'Sending…' : 'Email PDF to me'}
           </button>
           {pdfMsg && <span style={{ fontSize: 12, color: 'var(--fg-3)' }}>{pdfMsg}</span>}
+        </div>
+      )}
+
+      {audit.status === 'failed' && (
+        <div style={{ padding: '0 clamp(20px, 4vw, 40px) 8px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button onClick={retry} disabled={retryBusy} className="btn btn-secondary btn-sm">
+            {retryBusy ? 'Retrying…' : 'Retry audit'}
+          </button>
+          {retryMsg && <span className="text-sm">{retryMsg}</span>}
         </div>
       )}
 
