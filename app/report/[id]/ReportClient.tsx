@@ -60,6 +60,8 @@ function toStatusPill(audit: AuditPayload): AuditStatus {
 export function ReportClient({ initialAudit, userEmail }: { initialAudit: AuditPayload; userEmail?: string | null }) {
   const [audit, setAudit] = useState<AuditPayload>(initialAudit);
   const [now, setNow] = useState<number>(() => Date.now());
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [pdfMsg, setPdfMsg] = useState<string | null>(null);
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
 
@@ -109,6 +111,18 @@ export function ReportClient({ initialAudit, userEmail }: { initialAudit: AuditP
   type CompetitorsData = Parameters<typeof CompetitorTabs>[0]['data'];
   type ArticlesData = Parameters<typeof ArticleRecsGrid>[0]['data'];
 
+  async function sendPdf() {
+    setPdfBusy(true);
+    setPdfMsg(null);
+    try {
+      const r = await fetch(`/api/audits/${audit.id}/send-pdf`, { method: 'POST' });
+      const j = await r.json();
+      setPdfMsg(r.ok ? `Sent to ${userEmail}` : `Failed: ${j.error}`);
+    } finally {
+      setPdfBusy(false);
+    }
+  }
+
   return (
     <main style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       <ReportHeader
@@ -121,6 +135,15 @@ export function ReportClient({ initialAudit, userEmail }: { initialAudit: AuditP
         auditId={audit.id}
         userEmail={userEmail}
       />
+
+      {audit.status === 'complete' && userEmail && (
+        <div style={{ padding: '0 clamp(20px, 4vw, 40px) 8px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button onClick={sendPdf} disabled={pdfBusy} className="btn btn-secondary btn-sm">
+            {pdfBusy ? 'Sending…' : 'Email PDF to me'}
+          </button>
+          {pdfMsg && <span style={{ fontSize: 12, color: 'var(--fg-3)' }}>{pdfMsg}</span>}
+        </div>
+      )}
 
       {isFailed ? (
         <ReportFailed
