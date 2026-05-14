@@ -382,7 +382,6 @@ function AnalyzeLoaded({
 
   const renderChip = (k: Candidate) => {
     const sel = selected.has(k.term);
-    const typeShort = k.type === 'long-tail' ? 'long' : k.type === 'question' ? 'q' : 'head';
     const relColor =
       k.relevance > 0.75 ? 'var(--signal)' : k.relevance > 0.55 ? 'var(--amber)' : 'var(--fg-4)';
     return (
@@ -392,13 +391,10 @@ function AnalyzeLoaded({
         onClick={() => onToggle(k.term)}
         className={`pill ${sel ? 'selected' : 'ghost'}`}
         style={{ height: 32, padding: '0 14px', fontSize: 13 }}
-        title={`relevance ${k.relevance?.toFixed?.(2) ?? '?'} · ${k.type}`}
+        title={`relevance ${k.relevance?.toFixed?.(2) ?? '?'}`}
       >
         {sel && <Icon.check style={{ width: 10, height: 10 }} />}
         {k.term}
-        <span className="tag" style={{ marginLeft: 6 }}>
-          {typeShort}
-        </span>
         <span className="dot" style={{ background: relColor }} />
       </button>
     );
@@ -554,7 +550,7 @@ function AnalyzeLoaded({
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 18 }}>
             <Stat label="Pages crawled" value={pagesCrawled != null ? String(pagesCrawled) : '—'} />
             <Stat label="Sitemap URLs" value={sitemapCount != null ? String(sitemapCount) : '—'} />
-            <Stat label="GEO prompts" value="15" />
+            <Stat label="GEO prompts" value={count === 0 ? 'up to 8' : String(Math.min(count, 8))} />
             <Stat label="Est. duration" value="~2 min" />
           </div>
 
@@ -602,20 +598,6 @@ function AnalyzeLoaded({
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--fg-4)' }} /> low
-          </div>
-          <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed var(--border)' }}>
-            <span className="mono" style={{ color: 'var(--fg-4)', fontSize: 10 }}>
-              HEAD
-            </span>{' '}
-            broad terms ·{' '}
-            <span className="mono" style={{ color: 'var(--fg-4)', fontSize: 10 }}>
-              LONG
-            </span>{' '}
-            long-tail ·{' '}
-            <span className="mono" style={{ color: 'var(--fg-4)', fontSize: 10 }}>
-              Q
-            </span>{' '}
-            question
           </div>
         </div>
       </aside>
