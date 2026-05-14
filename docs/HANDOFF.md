@@ -62,7 +62,7 @@ Phase A + B + C + D are all live. The tool is deployed to production and serving
 
 ## Bugs status
 
-All 12 bugs filed across Phase C + Phase D + post-launch smoke are addressed — see [docs/bugs/README.md](bugs/README.md).
+All 13 bugs filed across Phase C + Phase D + post-launch smoke are addressed — see [docs/bugs/README.md](bugs/README.md).
 
 | ID | Severity | Area | Title | Fix |
 |---|---|---|---|---|
@@ -78,6 +78,7 @@ All 12 bugs filed across Phase C + Phase D + post-launch smoke are addressed —
 | BUG-010 | High | Frontend / Realtime | Report blanks on Realtime UPDATE (payload truncation) | `49a4032` |
 | BUG-011 | Medium | Backend / API | Heartbeat fires for terminal audits | `49a4032` |
 | BUG-012 | Medium | Backend / UI | Indexed pages estimate pinned at 10 | `6eabe7c` |
+| BUG-013 | High | Backend / API | Silent fire-and-forget Edge dispatch strands audits at `running` | pending commit |
 
 The historical stuck row `283ac840-f701-47e5-9e2a-bce24ad35435` is `status='complete'` (recovered during Phase D investigation). All 5 user-owned orphan `pending` rows were cleaned up after BUG-006 fix shipped.
 
