@@ -8,7 +8,7 @@ export function Logo({ size = 16, withWord = true }: { size?: number; withWord?:
       </svg>
       {withWord && (
         <span style={{ fontWeight: 600, fontSize: 14, letterSpacing: "-0.02em" }}>
-          rangefinder<span style={{ color: "var(--fg-3)" }}>/audit</span>
+          SEO GEO<span style={{ color: "var(--fg-3)" }}> AUDIT</span>
         </span>
       )}
     </span>

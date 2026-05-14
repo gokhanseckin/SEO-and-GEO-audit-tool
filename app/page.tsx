@@ -347,11 +347,22 @@ export default function HomePage() {
           gap: 12,
         }}
       >
-        <span>© 2026 Rangefinder Labs</span>
-        <div style={{ display: 'flex', gap: 24 }}>
+        <span>© 2026 SEO GEO AUDIT</span>
+        <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
           <span>Privacy</span>
           <span>Terms</span>
           <span>Methodology</span>
+          <span>
+            Developed by{' '}
+            <a
+              href="https://github.com/gokhanseckin"
+              target="_blank"
+              rel="noreferrer"
+              style={{ color: 'var(--fg-2)', textDecoration: 'none' }}
+            >
+              Gokhan Seckin
+            </a>
+          </span>
         </div>
       </footer>
 

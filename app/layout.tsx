@@ -12,7 +12,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata = {
-  title: "rangefinder/audit — SEO + GEO Audit",
+  title: "SEO GEO AUDIT",
   description:
     "How well does your site rank in Google and in LLM answers? One scan: Lighthouse, on-site, off-site, and 15 Gemini prompts.",
 };
