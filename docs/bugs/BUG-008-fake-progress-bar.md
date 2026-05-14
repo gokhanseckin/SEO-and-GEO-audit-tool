@@ -34,3 +34,10 @@ Honest time-based progress that ramps from 5% to ~90% over the expected duration
 - Replace static `~10s` with the real elapsed time: e.g. `7s` → `8s` → `9s`.
 
 When the parent transitions to `choosing` or `error`, the loader unmounts and the interval is cleaned up.
+
+
+---
+
+**Status:** Fixed in `a265c21`.
+
+AnalyzeLoading now tracks elapsed seconds and ramps progress linearly 5% → 90% over ~28s (then plateaus). Replaced static '~10s' label with live elapsed counter.

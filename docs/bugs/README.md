@@ -9,3 +9,5 @@
 | [BUG-005](BUG-005-homepage-no-signedin-state.md) | Medium | UI / Auth | Homepage doesn't reflect signed-in state; no sign-out button | Fixed in `6e3c9f0` |
 | [BUG-006](BUG-006-duplicate-pending-audits-on-resubmit.md) | Medium | Backend / UX | Resubmitting same domain creates duplicate pending audits | Fixed in `2ce5015` |
 | [BUG-007](BUG-007-analyze-page-no-signout.md) | Low | UI / Auth | `/analyze` page has no sign-out button or auth state in header | Fixed in `2ce5015` |
+| [BUG-008](BUG-008-fake-progress-bar.md) | Low | UI | `/analyze` progress bar is fake (40% hardcoded, "~10s" static) | Fixed in `a265c21` |
+| [BUG-009](BUG-009-relevance-always-high.md) | Medium | LLM | Keyword relevance scores cluster high (all green pills) | Investigated; fix deferred to v1.1 |
