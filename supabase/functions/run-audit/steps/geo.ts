@@ -1,5 +1,5 @@
 import { patchSection } from '../lib/db.ts';
-import { grounded } from '../lib/gemini.ts';
+import { grounded, resolveGroundingUrl } from '../lib/gemini.ts';
 import { domainFromUrl } from '../lib/serper.ts';
 import type { AuditRow } from '../lib/types.ts';
 
@@ -54,13 +54,16 @@ const BATCH_SIZE = 5;
 async function runOne(prompt: string, userDomain: string): Promise<PromptResult> {
   try {
     const r = await grounded(prompt);
+    const citedUrls = await Promise.all(
+      r.citedUrls.map(async (c) => ({ ...c, url: await resolveGroundingUrl(c.url) }))
+    );
     return {
       prompt,
       answer_text: r.text,
-      user_domain_mentioned: findUserMention(r.text, r.citedUrls, userDomain).mentioned,
-      user_domain_rank: findUserMention(r.text, r.citedUrls, userDomain).rank,
-      competitor_domains: extractCompetitorDomains(r.text, r.citedUrls, userDomain),
-      cited_urls: r.citedUrls,
+      user_domain_mentioned: findUserMention(r.text, citedUrls, userDomain).mentioned,
+      user_domain_rank: findUserMention(r.text, citedUrls, userDomain).rank,
+      competitor_domains: extractCompetitorDomains(r.text, citedUrls, userDomain),
+      cited_urls: citedUrls,
     };
   } catch (e) {
     return {

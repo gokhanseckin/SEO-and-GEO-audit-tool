@@ -47,6 +47,28 @@ export async function summarizeCompetitor(domain: string, snippet: string): Prom
   return (data.candidates?.[0]?.content?.parts?.[0]?.text ?? '').trim();
 }
 
+const GROUNDING_HOST_RE = /\/grounding-api-redirect\//i;
+
+export async function resolveGroundingUrl(url: string, timeoutMs = 6000): Promise<string> {
+  if (!GROUNDING_HOST_RE.test(url)) return url;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const r = await fetch(url, { method: 'HEAD', redirect: 'follow', signal: ctrl.signal });
+    return r.url || url;
+  } catch {
+    try {
+      const r = await fetch(url, { method: 'GET', redirect: 'follow', signal: ctrl.signal });
+      r.body?.cancel();
+      return r.url || url;
+    } catch {
+      return url;
+    }
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function recommendArticles(input: {
   userDomain: string;
   userPageTitles: string[];
