@@ -181,6 +181,7 @@ function StatTile({
   note?: string;
   good?: boolean;
 }) {
+  const isEmpty = value == null || value === '' || value === '—';
   const valueColor =
     good === false ? 'var(--danger)' : good === true ? 'var(--signal)' : 'var(--fg)';
   return (
@@ -190,15 +191,15 @@ function StatTile({
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 6 }}>
         <span className="mono" style={{ fontSize: 28, fontWeight: 600, color: valueColor }}>
-          {value}
+          {isEmpty ? '—' : value}
         </span>
-        {unit && (
+        {!isEmpty && unit && (
           <span className="mono" style={{ fontSize: 12, color: 'var(--fg-3)' }}>
             {unit}
           </span>
         )}
       </div>
-      {note && (
+      {!isEmpty && note && (
         <div className="mono" style={{ fontSize: 10.5, color: 'var(--fg-4)' }}>
           {note}
         </div>
