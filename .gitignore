@@ -37,7 +37,13 @@ yarn-error.log*
 # Test
 coverage/
 .nyc_output/
+test-results/
+playwright-report/
+playwright/.cache/
 
 # Misc
 *.local
 .vercel
+
+# Claude Code session data
+.claude/

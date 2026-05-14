@@ -7,8 +7,25 @@ export interface GroundedResult {
   citedUrls: { url: string; title: string }[];
 }
 
-function stripFences(s: string): string {
-  return s.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+function extractJson(s: string): string {
+  // 1. Prefer a triple-fenced block.
+  const fenced = s.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (fenced?.[1]) return fenced[1].trim();
+  // 2. Otherwise slurp the first balanced [..] or {..}.
+  const idx = s.search(/[\[{]/);
+  if (idx < 0) return s.trim();
+  const open = s[idx];
+  const close = open === '[' ? ']' : '}';
+  let depth = 0;
+  let end = -1;
+  for (let i = idx; i < s.length; i++) {
+    if (s[i] === open) depth++;
+    else if (s[i] === close) {
+      depth--;
+      if (depth === 0) { end = i; break; }
+    }
+  }
+  return end > 0 ? s.slice(idx, end + 1) : s.trim();
 }
 
 async function call(prompt: string, grounding = false): Promise<any> {
@@ -47,6 +64,28 @@ export async function summarizeCompetitor(domain: string, snippet: string): Prom
   return (data.candidates?.[0]?.content?.parts?.[0]?.text ?? '').trim();
 }
 
+const GROUNDING_HOST_RE = /\/grounding-api-redirect\//i;
+
+export async function resolveGroundingUrl(url: string, timeoutMs = 6000): Promise<string> {
+  if (!GROUNDING_HOST_RE.test(url)) return url;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const r = await fetch(url, { method: 'HEAD', redirect: 'follow', signal: ctrl.signal });
+    return r.url || url;
+  } catch {
+    try {
+      const r = await fetch(url, { method: 'GET', redirect: 'follow', signal: ctrl.signal });
+      r.body?.cancel();
+      return r.url || url;
+    } catch {
+      return url;
+    }
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function recommendArticles(input: {
   userDomain: string;
   userPageTitles: string[];
@@ -64,6 +103,10 @@ Propose 8-12 NEW article ideas the user should write (do NOT duplicate existing 
 {"title":string,"angle":string,"target_keyword":string,"why_it_ranks":string,"source_urls":string[]}.`;
   const data = await call(prompt);
   const raw = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '[]';
-  const parsed = JSON.parse(stripFences(raw));
-  return Array.isArray(parsed) ? parsed : [];
+  try {
+    const parsed = JSON.parse(extractJson(raw));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
 }

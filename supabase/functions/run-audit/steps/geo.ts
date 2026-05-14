@@ -1,16 +1,7 @@
 import { patchSection } from '../lib/db.ts';
-import { grounded } from '../lib/gemini.ts';
+import { grounded, resolveGroundingUrl } from '../lib/gemini.ts';
 import { domainFromUrl } from '../lib/serper.ts';
-import type { AuditRow } from '../lib/types.ts';
-
-interface PromptResult {
-  prompt: string;
-  answer_text: string;
-  user_domain_mentioned: boolean;
-  user_domain_rank: number | null;
-  competitor_domains: string[];
-  cited_urls: { url: string; title: string }[];
-}
+import type { AuditRow, GeoPromptResult as PromptResult } from '../lib/types.ts';
 
 function templateForKeyword(kw: string): string {
   if (/\?$/.test(kw) || /^(how|what|why|when|where|who|which)\b/i.test(kw)) return kw;
@@ -54,13 +45,16 @@ const BATCH_SIZE = 5;
 async function runOne(prompt: string, userDomain: string): Promise<PromptResult> {
   try {
     const r = await grounded(prompt);
+    const citedUrls = await Promise.all(
+      r.citedUrls.map(async (c) => ({ ...c, url: await resolveGroundingUrl(c.url) }))
+    );
     return {
       prompt,
       answer_text: r.text,
-      user_domain_mentioned: findUserMention(r.text, r.citedUrls, userDomain).mentioned,
-      user_domain_rank: findUserMention(r.text, r.citedUrls, userDomain).rank,
-      competitor_domains: extractCompetitorDomains(r.text, r.citedUrls, userDomain),
-      cited_urls: r.citedUrls,
+      user_domain_mentioned: findUserMention(r.text, citedUrls, userDomain).mentioned,
+      user_domain_rank: findUserMention(r.text, citedUrls, userDomain).rank,
+      competitor_domains: extractCompetitorDomains(r.text, citedUrls, userDomain),
+      cited_urls: citedUrls,
     };
   } catch (e) {
     return {
@@ -72,7 +66,7 @@ async function runOne(prompt: string, userDomain: string): Promise<PromptResult>
 }
 
 export async function runGeo(audit: AuditRow): Promise<{ citedUrls: { url: string; title: string }[] }> {
-  const selected: string[] = ((audit.sections as any).keywords?.selected ?? []) as string[];
+  const selected: string[] = audit.sections.keywords?.selected ?? [];
   const prompts = selected.slice(0, MAX_PROMPTS).map(templateForKeyword);
   const results: PromptResult[] = [];
   const allCited: { url: string; title: string }[] = [];

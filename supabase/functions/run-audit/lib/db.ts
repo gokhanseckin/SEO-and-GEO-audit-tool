@@ -15,10 +15,11 @@ export async function loadAudit(id: string): Promise<AuditRow> {
 }
 
 export async function patchSection(auditId: string, key: string, value: unknown): Promise<void> {
-  const supabase = db();
-  const { data: current } = await supabase.from('audits').select('sections').eq('id', auditId).single();
-  const sections = { ...(current?.sections ?? {}), [key]: value };
-  const { error } = await supabase.from('audits').update({ sections }).eq('id', auditId);
+  const { error } = await db().rpc('audit_patch_section', {
+    p_id: auditId,
+    p_key: key,
+    p_value: value as Record<string, unknown>,
+  });
   if (error) throw error;
 }
 
@@ -32,6 +33,7 @@ export async function setStatus(
 }
 
 export async function getLastHeartbeat(auditId: string): Promise<string | null> {
-  const { data } = await db().from('audits').select('last_heartbeat_at').eq('id', auditId).single();
+  const { data, error } = await db().from('audits').select('last_heartbeat_at').eq('id', auditId).single();
+  if (error) throw error;
   return (data?.last_heartbeat_at ?? null) as string | null;
 }

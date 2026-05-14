@@ -1,21 +1,7 @@
+import { DOMParser, type Element } from 'jsr:@b-fuze/deno-dom';
 import { patchSection } from '../lib/db.ts';
 import { fetchJson, fetchText } from '../lib/fetch.ts';
-import type { AuditRow, CrawledPage } from '../lib/types.ts';
-
-interface OnsiteSection {
-  pages_crawled: CrawledPage[];
-  lighthouse: {
-    performance: number | null;
-    accessibility: number | null;
-    best_practices: number | null;
-    seo: number | null;
-    cwv: { lcp_ms: number | null; cls: number | null; inp_ms: number | null };
-  };
-  issues: { severity: 'high' | 'med' | 'low'; message: string; page: string }[];
-  sitemap_found: boolean;
-  sitemap_url_count: number;
-  error?: string;
-}
+import type { AuditRow, CrawledPage, OnsiteSection } from '../lib/types.ts';
 
 async function fetchLighthouse(url: string): Promise<OnsiteSection['lighthouse']> {
   const key = Deno.env.get('PAGESPEED_API_KEY');
@@ -44,7 +30,9 @@ async function fetchLighthouse(url: string): Promise<OnsiteSection['lighthouse']
 async function checkSitemap(domain: string): Promise<{ found: boolean; url_count: number }> {
   try {
     const xml = await fetchText(`https://${domain}/sitemap.xml`, 5000);
-    const urlCount = (xml.match(/<loc>/g) || []).length;
+    const doc = new DOMParser().parseFromString(xml, 'text/html');
+    const locs = (doc?.querySelectorAll('loc') ?? []) as unknown as Element[];
+    const urlCount = locs.length;
     return { found: urlCount > 0, url_count: urlCount };
   } catch { return { found: false, url_count: 0 }; }
 }
@@ -72,7 +60,7 @@ function computeIssues(pages: CrawledPage[]): OnsiteSection['issues'] {
 
 export async function runOnsite(audit: AuditRow): Promise<void> {
   try {
-    const cache = (audit.sections as any).onsite_crawl_cache as CrawledPage[] | undefined;
+    const cache = audit.sections.onsite_crawl_cache;
     if (!cache?.length) {
       await patchSection(audit.id, 'onsite', { error: 'no_crawl_cache' });
       return;
@@ -86,7 +74,7 @@ export async function runOnsite(audit: AuditRow): Promise<void> {
     ]);
     const issues = computeIssues(cache);
     const section: OnsiteSection = {
-      pages_crawled: cache,
+      pages_crawled: cache.map((p) => ({ ...p, text_content: undefined })),
       lighthouse,
       issues,
       sitemap_found: sitemap.found,

@@ -60,7 +60,20 @@ export const geminiProvider: LLMProvider = {
 
   async extractKeywords(siteText: string): Promise<KeywordCandidate[]> {
     const prompt = `You are an SEO analyst. From the website text below, extract 20-30 candidate keywords for SEO targeting.
-Mix head terms, long-tail phrases, and question-style queries. For each, estimate relevance 0..1 based on how clearly the site is about that topic.
+Mix head terms, long-tail phrases, and question-style queries.
+
+Score each term's relevance using this rubric — be strict about the range:
+  0.90-1.00 = the site exists primarily to serve this topic (use for AT MOST 1-2 terms)
+  0.70-0.89 = directly relevant; explicitly named or described on the site
+  0.50-0.69 = adjacent; mentioned or implied but not central
+  0.30-0.49 = tangential; could plausibly bring qualified traffic
+  0.00-0.29 = off-topic or speculative
+
+REQUIREMENTS:
+- At LEAST 5 candidates MUST score below 0.70.
+- Distribute scores across the full 0..1 range — do NOT cluster them all above 0.75.
+- Calibrate against the site's primary purpose. A term about a sibling product, the company's location, or a generic industry topic is NOT 0.9+ relevance — score it 0.4-0.6.
+
 Return ONLY valid JSON: an array of {"term": string, "relevance": number, "type": "head"|"long-tail"|"question"}. No prose.
 
 WEBSITE TEXT:

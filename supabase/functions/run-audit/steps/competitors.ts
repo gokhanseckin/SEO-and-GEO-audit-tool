@@ -2,7 +2,18 @@ import { patchSection } from '../lib/db.ts';
 import { fetchText } from '../lib/fetch.ts';
 import { summarizeCompetitor } from '../lib/gemini.ts';
 import { serperSearch, SerperBudget, domainFromUrl } from '../lib/serper.ts';
-import type { AuditRow } from '../lib/types.ts';
+import type { AuditRow, GeoSection } from '../lib/types.ts';
+
+const FETCH_ERROR_RE = /^(?:fetch failed|TypeError: Failed to fetch|HTTP \d{3}|timeout|Could not access|^The (?:URL|page) could not be)/i;
+
+function safeSummary(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const t = raw.trim();
+  if (!t) return null;
+  if (FETCH_ERROR_RE.test(t)) return null;
+  if (t.length < 20) return null; // implausibly short → likely error
+  return t;
+}
 
 function htmlMeta(html: string): { title: string; meta: string } {
   const t = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(html)?.[1]?.trim() ?? '';
@@ -12,8 +23,8 @@ function htmlMeta(html: string): { title: string; meta: string } {
 
 export async function runCompetitors(audit: AuditRow, budget: SerperBudget): Promise<void> {
   try {
-    const selected: string[] = ((audit.sections as any).keywords?.selected ?? []) as string[];
-    const geo = (audit.sections as any).geo;
+    const selected: string[] = audit.sections.keywords?.selected ?? [];
+    const geo: GeoSection | undefined = audit.sections.geo;
 
     const serpDomainTally = new Map<string, { appearances: number; sumPos: number }>();
     for (const kw of selected) {
@@ -36,7 +47,7 @@ export async function runCompetitors(audit: AuditRow, budget: SerperBudget): Pro
 
     const llmTally = new Map<string, { appearances: number; cited: Set<string> }>();
     for (const p of geo?.prompts ?? []) {
-      for (const d of p.competitor_domains as string[]) {
+      for (const d of p.competitor_domains) {
         const cur = llmTally.get(d) ?? { appearances: 0, cited: new Set<string>() };
         cur.appearances += 1;
         for (const u of p.cited_urls ?? []) {
@@ -64,13 +75,13 @@ export async function runCompetitors(audit: AuditRow, budget: SerperBudget): Pro
       try {
         const html = await fetchText(`https://${d}/`, 5000);
         const { title, meta } = htmlMeta(html);
-        const summary = await summarizeCompetitor(d, `${title}\n\n${meta}\n\n${html.slice(0, 3000)}`);
+        const summary = safeSummary(await summarizeCompetitor(d, `${title}\n\n${meta}\n\n${html.slice(0, 3000)}`));
         const sources: string[] = [];
         if (combined.get(d)?.serp) sources.push('serp');
         if (combined.get(d)?.llm) sources.push('llm');
         enriched.push({ domain: d, title, meta_desc: meta, summary, sources });
       } catch (e) {
-        enriched.push({ domain: d, title: '', meta_desc: '', summary: `(fetch failed: ${e})`, sources: [] });
+        enriched.push({ domain: d, title: '', meta_desc: '', summary: null, sources: [] });
       }
     }
 

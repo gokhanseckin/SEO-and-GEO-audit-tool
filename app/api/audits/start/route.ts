@@ -21,6 +21,21 @@ export async function POST(request: Request) {
   const domain = normalizeDomain(parsed.data.domain);
   if (!isValidDomain(domain)) return NextResponse.json({ error: 'invalid_domain' }, { status: 400 });
 
+  // Dedup: if this user already has a pending/running audit for the same domain,
+  // return its id instead of creating a duplicate row (closes BUG-006).
+  const { data: existingForDomain } = await supabase
+    .from('audits')
+    .select('id, status')
+    .eq('user_id', user.id)
+    .eq('domain', domain)
+    .in('status', ['pending', 'running'])
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (existingForDomain) {
+    return NextResponse.json({ audit_id: existingForDomain.id });
+  }
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
