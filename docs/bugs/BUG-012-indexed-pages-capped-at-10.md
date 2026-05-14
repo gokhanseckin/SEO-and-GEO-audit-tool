@@ -58,7 +58,7 @@ Real audit smoke: audit `vercel.com`, confirm Indexed pages tile shows a comma-f
 
 ---
 
-**Status:** Fixed in `<COMMIT_SHA>`.
+**Status:** Fixed in `6eabe7c`.
 
 - Edge Function: `SerperResult` extended; offsite step reads `searchInformation.totalResults` with fallback.
 - Frontend: `OffsiteCard` formats with `toLocaleString()`.
