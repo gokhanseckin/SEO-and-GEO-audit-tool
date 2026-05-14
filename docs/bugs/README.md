@@ -11,3 +11,5 @@
 | [BUG-007](BUG-007-analyze-page-no-signout.md) | Low | UI / Auth | `/analyze` page has no sign-out button or auth state in header | Fixed in `2ce5015` |
 | [BUG-008](BUG-008-fake-progress-bar.md) | Low | UI | `/analyze` progress bar is fake (40% hardcoded, "~10s" static) | Fixed in `a265c21` |
 | [BUG-009](BUG-009-relevance-always-high.md) | Medium | LLM | Keyword relevance scores cluster high (all green pills) | Fix A shipped in `e3d9232` (retest pending) |
+| [BUG-010](BUG-010-realtime-replace-clobbers-state.md) | High | Frontend / Realtime | Realtime UPDATE handler clobbers state with truncated payload (report blanks on viewing) | Fixed in `49a4032` |
+| [BUG-011](BUG-011-heartbeat-keeps-firing-after-complete.md) | Medium | Backend / API | Heartbeat endpoint accepts pings for terminal audits | Fixed in `49a4032` |

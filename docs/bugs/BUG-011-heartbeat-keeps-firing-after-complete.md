@@ -42,3 +42,10 @@ return NextResponse.json({ ok: true });
 ```
 
 Cheap defense in depth. Prevents the BUG-010 amplification path even if the client has stale local state.
+
+
+---
+
+**Status:** Fixed in `49a4032`.
+
+Heartbeat endpoint now checks audit status before writing; returns ok+skipped for complete/failed audits. Prevents the spurious UPDATE events that triggered BUG-010 in the wild.

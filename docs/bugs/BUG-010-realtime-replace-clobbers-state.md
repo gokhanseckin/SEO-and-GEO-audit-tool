@@ -43,3 +43,10 @@ Don't trust `payload.new`. Use the Realtime event ONLY as a notification trigger
 Cost: one extra DB round-trip per Realtime event (~10/audit lifetime). Negligible.
 
 Combined with BUG-011 (heartbeat skips terminal audits), eliminates the spurious UPDATE events that triggered this bug in the wild.
+
+
+---
+
+**Status:** Fixed in `49a4032`.
+
+Realtime UPDATE handler now uses the event as a notification trigger and refetches the full row via REST (no payload size limit). Combined with BUG-011 heartbeat defense, eliminates the state-clobbering cascade.
